@@ -43,14 +43,14 @@ const findById = async (id) => {
     return result.rows[0] || null;
 };
 
-const createUser = async (username, email, phoneNumber, password) => {
+const createUser = async (username, email, phoneNumber, password, queryable = pool) => {
     const query = `
         INSERT INTO users (username, email, phone_number, password)
         VALUES ($1, $2, $3, $4)
         RETURNING id, username, email, phone_number, created_at
     `;
 
-    const result = await pool.query(query, [
+    const result = await queryable.query(query, [
         username,
         email,
         phoneNumber,
