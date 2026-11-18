@@ -5,7 +5,27 @@ const dotenv = require('dotenv');
 const app = express();
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT === undefined
+    ? 3000
+    : Number(process.env.PORT);
+const sessionSecret = process.env.SESSION_SECRET;
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
+    throw new Error('PORT must be an integer between 1 and 65535.');
+}
+
+if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error('SESSION_SECRET must be set to a value of at least 32 characters.');
+}
+
+if (!Number.isSafeInteger(trustProxyHops) || trustProxyHops < 0) {
+    throw new Error('TRUST_PROXY_HOPS must be a non-negative integer.');
+}
+
+if (trustProxyHops > 0) {
+    app.set('trust proxy', trustProxyHops);
+}
 
 const authMiddleware = require('./middleware/authMiddleware');
 
@@ -28,7 +48,7 @@ app.use(session({
         createTableIfMissing: true
     }),
 
-    secret: process.env.SESSION_SECRET,
+    secret: sessionSecret,
 
     resave: false,
     saveUninitialized: false,
@@ -40,8 +60,6 @@ app.use(session({
         maxAge: 1000 * 60 * 60
     }
 }));
-
-console.log(process.env.PORT)
 
 // Serve CSS files
 app.use('/css', express.static(path.join(__dirname, 'public', 'css')));

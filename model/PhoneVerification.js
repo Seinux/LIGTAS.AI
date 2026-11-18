@@ -2,7 +2,7 @@
 const pool = require('../config/database');
 
 // Create the initial OTP for a new verification session.
-const createOrUpdateOTP = async (userId, otpHash) => {
+const createOrUpdateOTP = async (userId, otpHash, queryable = pool) => {
     const query = `
         INSERT INTO phone_verifications (
             user_id,
@@ -30,7 +30,7 @@ const createOrUpdateOTP = async (userId, otpHash) => {
         RETURNING id, user_id, expires_at
     `;
 
-    const result = await pool.query(query, [userId, otpHash]);
+    const result = await queryable.query(query, [userId, otpHash]);
     return result.rows[0];
 };
 
@@ -88,7 +88,6 @@ const resendOTP = async (userId, otpHash) => {
             resend_count = resend_count + 1,
             last_sent_at = NOW()
         WHERE user_id = $1
-          AND expires_at > NOW()
           AND last_sent_at <= NOW() - INTERVAL '60 seconds'
           AND resend_count < 5
         RETURNING id, user_id, expires_at, resend_count

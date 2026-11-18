@@ -3,8 +3,13 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const phoneVerificationModel = require('../model/PhoneVerification');
 const userModel = require('../model/User');
+const smsService = require('../services/smsService');
+const { normalizePhilippineMobileNumber } = require('../utils/phoneNumber');
 
 const register = async (req, res) => {
+    let client;
+    let transactionStarted = false;
+
     try {
         const {
             username,
@@ -14,59 +19,118 @@ const register = async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (!username || !email || !phoneNumber || !password) {
+        if (typeof username !== 'string'
+            || typeof email !== 'string'
+            || typeof phoneNumber !== 'string'
+            || typeof password !== 'string'
+            || !username
+            || !email
+            || !phoneNumber
+            || !password) {
             return res.status(400).json({
                 message: 'All fields are required.'
             });
         }
 
         // Validate password length
-        if (password.length < 8) {
+        if (password.length < 8 || password.length > 72) {
             return res.status(400).json({
-                message: 'Password must be at least 8 characters.'
+                message: 'Password must be between 8 and 72 characters.'
             });
         }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedPhoneNumber =
+            normalizePhilippineMobileNumber(phoneNumber);
 
         // Check existing email
-        const existingEmail = await userModel.findByEmail(email);
+        const existingEmail = await userModel.findByEmail(normalizedEmail);
+        const existingPhone = await userModel.findByPhone(normalizedPhoneNumber);
 
-        if (existingEmail) {
-            return res.status(409).json({
-                message: 'Email is already registered.'
+        if (existingEmail || existingPhone) {
+            const sameUnverifiedAccount = existingEmail
+                && existingPhone
+                && String(existingEmail.id) === String(existingPhone.id)
+                && !existingEmail.phone_verified
+                && await bcrypt.compare(password, existingEmail.password);
+
+            if (!sameUnverifiedAccount) {
+                return res.status(409).json({
+                    message: 'Email or phone number is already registered.'
+                });
+            }
+
+            req.session.pendingVerificationUserId = existingEmail.id;
+            await new Promise((resolve, reject) => {
+                req.session.save((error) => {
+                    if (error) reject(error);
+                    else resolve();
+                });
             });
-        }
 
-        // Check existing phone number
-        const existingPhone = await userModel.findByPhone(phoneNumber);
+            const pendingOTP =
+                await phoneVerificationModel.findOTPByUserId(existingEmail.id);
 
-        if (existingPhone) {
-            return res.status(409).json({
-                message: 'Phone number is already registered.'
+            if (!pendingOTP) {
+                const otp = crypto.randomInt(100000, 1000000).toString();
+                const otpHash = await bcrypt.hash(otp, 10);
+                await phoneVerificationModel.createOrUpdateOTP(
+                    existingEmail.id,
+                    otpHash
+                );
+
+                try {
+                    await smsService.sendVerificationCode(
+                        normalizedPhoneNumber,
+                        otp
+                    );
+                } catch (error) {
+                    console.error('OTP recovery delivery error:', error.message);
+
+                    return res.status(502).json({
+                        message: 'Account is ready for verification, but the code could not be sent. Please try resending it.'
+                    });
+                }
+            }
+
+            return res.status(200).json({
+                message: 'Account is awaiting phone verification.',
+                user: {
+                    id: existingEmail.id,
+                    username: existingEmail.username,
+                    email: existingEmail.email,
+                    phone_number: existingEmail.phone_number
+                }
             });
         }
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user
-        const user = await userModel.createUser(
-            username,
-            email,
-            phoneNumber,
-            hashedPassword
-        );
-
-        // Generate a 6-digit OTP
+        // Generate and hash the OTP before opening the transaction.
         const otp = crypto.randomInt(100000, 1000000).toString();
-
-        // Hash the OTP
         const otpHash = await bcrypt.hash(otp, 10);
 
-        // Save OTP in database
+        client = await pool.connect();
+        await client.query('BEGIN');
+        transactionStarted = true;
+
+        const user = await userModel.createUser(
+            username,
+            normalizedEmail,
+            normalizedPhoneNumber,
+            hashedPassword,
+            client
+        );
+
         await phoneVerificationModel.createOrUpdateOTP(
             user.id,
-            otpHash
+            otpHash,
+            client
         );
+
+        await client.query('COMMIT');
+        transactionStarted = false;
 
         req.session.pendingVerificationUserId = user.id;
 
@@ -77,8 +141,15 @@ const register = async (req, res) => {
             });
         });
 
-        // Development only: display OTP in terminal
-        console.log(`OTP for ${phoneNumber}: ${otp}`);
+        try {
+            await smsService.sendVerificationCode(normalizedPhoneNumber, otp);
+        } catch (error) {
+            console.error('OTP delivery error:', error.message);
+
+            return res.status(502).json({
+                message: 'Account created, but the verification code could not be sent. Please try resending it.'
+            });
+        }
 
         return res.status(201).json({
             message: 'Account created successfully.',
@@ -86,18 +157,33 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
+        if (transactionStarted && client) {
+            await client.query('ROLLBACK');
+        }
+
+        if (error.code === '23505') {
+            return res.status(409).json({
+                message: 'Email or phone number is already registered.'
+            });
+        }
+
         console.error('Registration error:', error);
 
         return res.status(500).json({
             message: 'Internal server error.'
         });
+
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
 };
 
 
 
 const verifyOTP = async (req, res) => {
-    const client = await pool.connect();
+    let client;
     let transactionStarted = false;
 
     try {
@@ -123,6 +209,8 @@ const verifyOTP = async (req, res) => {
                 message: 'OTP must contain exactly 6 digits.'
             });
         }
+
+        client = await pool.connect();
 
         // Start database transaction
         await client.query('BEGIN');
@@ -150,12 +238,7 @@ const verifyOTP = async (req, res) => {
 
         // Check expiration
         if (new Date(verification.expires_at) <= new Date()) {
-            await client.query(
-                'DELETE FROM phone_verifications WHERE user_id = $1',
-                [userId]
-            );
-
-            await client.query('COMMIT');
+            await client.query('ROLLBACK');
             transactionStarted = false;
 
             return res.status(400).json({
@@ -165,12 +248,7 @@ const verifyOTP = async (req, res) => {
 
         // Check maximum attempts
         if (verification.attempts >= 5) {
-            await client.query(
-                'DELETE FROM phone_verifications WHERE user_id = $1',
-                [userId]
-            );
-
-            await client.query('COMMIT');
+            await client.query('ROLLBACK');
             transactionStarted = false;
 
             return res.status(429).json({
@@ -245,7 +323,7 @@ const verifyOTP = async (req, res) => {
         });
 
     } catch (error) {
-        if (transactionStarted) {
+        if (transactionStarted && client) {
             await client.query('ROLLBACK');
         }
 
@@ -256,7 +334,9 @@ const verifyOTP = async (req, res) => {
         });
 
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+        }
     }
 };
 
@@ -316,13 +396,6 @@ const resendOTP = async (req, res) => {
             });
         }
 
-        // Check expiration
-        if (new Date(existingOTP.expires_at) <= new Date()) {
-            return res.status(400).json({
-                message: 'OTP has expired. Please restart verification.'
-            });
-        }
-
         // Generate new OTP
         const otp = crypto.randomInt(100000, 1000000).toString();
         const otpHash = await bcrypt.hash(otp, 10);
@@ -339,8 +412,15 @@ const resendOTP = async (req, res) => {
             });
         }
 
-        // Development only: display OTP in terminal
-        console.log(`New OTP for ${user.phone_number}: ${otp}`);
+        try {
+            await smsService.sendVerificationCode(user.phone_number, otp);
+        } catch (error) {
+            console.error('OTP resend delivery error:', error.message);
+
+            return res.status(502).json({
+                message: 'The verification code could not be sent. Please try again later.'
+            });
+        }
 
         return res.status(200).json({
             message: 'A new OTP has been generated.'
@@ -363,7 +443,10 @@ const login = async (req, res) => {
         const { email, password } = req.body;
 
         // Validate required fields
-        if (!email || !password) {
+        if (typeof email !== 'string'
+            || typeof password !== 'string'
+            || !email
+            || !password) {
             return res.status(400).json({
                 message: 'Email and password are required.'
             });

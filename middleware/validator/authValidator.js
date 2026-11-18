@@ -1,5 +1,6 @@
 
 const { body, validationResult } = require('express-validator');
+const { normalizePhilippineMobileNumber } = require('../../utils/phoneNumber');
 
 // Registration validation rules
 const registerValidation = [
@@ -29,7 +30,9 @@ const registerValidation = [
         .withMessage('Phone number is required.')
         .bail()
         .matches(/^(09\d{9}|\+639\d{9})$/)
-        .withMessage('Enter a valid Philippine mobile number.'),
+        .withMessage('Enter a valid Philippine mobile number.')
+        .bail()
+        .customSanitizer(normalizePhilippineMobileNumber),
 
     body('password')
         .notEmpty()
