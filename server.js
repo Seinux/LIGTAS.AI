@@ -79,6 +79,12 @@ app.use('/api/geocoding', geocodingRoutes);
 const dashboardRoutes = require('./route/dashboardRoutes');
 app.use('/api/dashboard', dashboardRoutes);
 
+const weatherRoutes = require('./route/weatherRoutes');
+app.use('/api/weather', weatherRoutes);
+
+const reportRoutes = require('./route/reportRoutes');
+app.use('/api/reports', reportRoutes);
+
 // Frontend pages
 // Login page
 app.get('/login', (req, res) => {

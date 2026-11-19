@@ -1,111 +1,513 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Dashboard | LIGTAS.AI</title>
+
+    <!-- Existing stylesheets -->
     <link rel="stylesheet" href="/css/global.css">
     <link rel="stylesheet" href="/css/dashboard.css">
+
+    <!-- Barangay map stylesheet -->
+    <link rel="stylesheet" href="/css/barangay-map.css">
+
+    <!-- MapLibre GL JS -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.css"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+
+    <!-- Existing dashboard scripts -->
     <script src="/js/dashboard.js" defer></script>
+    <script src="/js/barangay-map.js" defer></script>
 </head>
+
 <body>
+
 <header class="topbar">
+
     <div class="brand">🌦️ LIGTAS-AI</div>
+
     <nav class="tabs">
         <a href="#overview" class="active">Overview</a>
         <a href="#forecast">Forecast</a>
         <a href="#safety">Area safety</a>
     </nav>
+
     <div class="top-actions">
+
         <div class="unit-toggle">
             <button id="unitF" class="active" type="button">°F</button>
             <button id="unitC" type="button">°C</button>
         </div>
-        <button id="logoutButton" class="ghost" type="button">Log out</button>
+
+        <button id="logoutButton" class="ghost" type="button">
+            Log out
+        </button>
+
     </div>
+
 </header>
 
-<div class="layout">
-    <aside class="sidebar">
-        <h3>Locations</h3>
-        <input id="searchInput" type="search" placeholder="Search city or area" autocomplete="off">
-        <ul id="searchResults" class="list hidden"></ul>
-        <button id="useLocation" class="link" type="button">◎ Use current location</button>
 
-        <p class="label">SAVED LOCATIONS <button id="saveCurrent" class="plus" type="button" title="Save current location">+</button></p>
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h3>Locations</h3>
+
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="Search city or area"
+            autocomplete="off"
+        >
+
+        <ul id="searchResults" class="list hidden"></ul>
+
+        <button id="useLocation" class="link" type="button">
+            ◎ Use current location
+        </button>
+
+
+        <p class="label">
+            SAVED LOCATIONS
+            <button
+                id="saveCurrent"
+                class="plus"
+                type="button"
+                title="Save current location"
+            >+</button>
+        </p>
+
         <ul id="savedList" class="list"></ul>
 
+
         <p class="label">RECENT SEARCHES</p>
+
         <ul id="recentList" class="list small"></ul>
 
+
         <div class="tip">
+
             <strong>A little awareness. A safer day.</strong>
-            <p>Check local conditions before you head out.</p>
+
+            <p>
+                Check local conditions before you head out.
+            </p>
+
         </div>
+
     </aside>
 
+
+    <!-- MAIN DASHBOARD -->
     <main id="overview" class="main">
+
         <p class="label">YOUR LOCAL OUTLOOK</p>
+
+
+        <!-- LOCATION HEADING -->
         <div class="title-row">
+
             <div class="location-heading">
+
                 <h1 id="locName">Loading location...</h1>
+
                 <small id="coords"></small>
+
             </div>
 
             <div class="right-text">
+
                 <div id="dateText"></div>
+
                 <small id="updatedText"></small>
+
+            </div>
+
+        </div>
+
+
+        <!-- BARANGAY DISASTER MAP -->
+        <section
+            id="barangayMapSection"
+            class="card barangay-map-section"
+        >
+
+            <div class="map-heading">
+
+                <div>
+
+                    <p class="label">INTERACTIVE AREA MAP</p>
+
+                    <h2>Barangay Disaster Map</h2>
+
+                    <small id="mapLocationName">
+                        Loading barangay...
+                    </small>
+
+                </div>
+
+
+                <div class="map-controls">
+
+                    <button id="mapReset" type="button">
+                        Reset view
+                    </button>
+
+                    <button id="map3D" type="button">
+                        3D View
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div id="barangayMap" class="barangay-map">
+
+                <div class="map-loading">
+                    Loading interactive map...
+                </div>
+
+            </div>
+
+
+            <div class="map-footer">
+
+
+                <div class="map-legend">
+                <span class="legend-title">INCIDENT SEVERITY</span>
+
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-dot low"></span>
+                        <span>Low</span>
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot moderate"></span>
+                        <span>Moderate</span>
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot high"></span>
+                        <span>High</span>
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot critical"></span>
+                        <span>Critical</span>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="map-filters">
+                <span class="filter-title">FILTER INCIDENTS</span>
+
+                <div class="filter-options">
+                    <label class="filter-option">
+                        <input type="checkbox" value="flooding" checked>
+                        <span>Flooding</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input type="checkbox" value="landslide" checked>
+                        <span>Landslide</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input type="checkbox" value="road_blocked" checked>
+                        <span>Road Blocked</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input type="checkbox" value="heavy_rain" checked>
+                        <span>Heavy Rain</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input type="checkbox" value="strong_wind" checked>
+                        <span>Strong Wind</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input type="checkbox" value="fallen_tree" checked>
+                        <span>Fallen Tree</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input type="checkbox" value="other" checked>
+                        <span>Other</span>
+                    </label>
+                </div>
+            </div>
+
+                <div id="selectedStreet">
+                    Select a street on the map to report an incident.
+                </div>
+
+                <span id="mapStatus">
+                    Map initializing...
+                </span>
+
+            </div>
+
+        </section>
+
+
+        <!-- WEATHER AND AREA SAFETY -->
+        <div class="grid two">
+
+            <!-- CURRENT WEATHER -->
+            <section class="card">
+
+                <h4>Current weather</h4>
+
+                <div class="current">
+
+                    <div class="big" id="temp">--°</div>
+
+                    <div>
+
+                        <div class="cond" id="cond">--</div>
+
+                        <small id="range"></small>
+
+                    </div>
+
+                    <div class="big-icon" id="bigIcon"></div>
+
+                </div>
+
+
+                <div class="stats">
+
+                    <div>
+                        <small>Wind</small>
+                        <b id="wind">--</b>
+                    </div>
+
+                    <div>
+                        <small>Humidity</small>
+                        <b id="humidity">--</b>
+                    </div>
+
+                    <div>
+                        <small>Visibility</small>
+                        <b id="visibility">--</b>
+                    </div>
+
+                    <div>
+                        <small>UV index</small>
+                        <b id="uvi">--</b>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- AREA SAFETY -->
+            <section id="safety" class="card">
+
+                <h4>
+                    Area safety
+                    <small id="alertCount"></small>
+                </h4>
+
+                <div id="alertBox" class="alert"></div>
+
+            </section>
+
+        </div>
+
+
+        <!-- HOURLY FORECAST -->
+        <section class="card">
+
+            <h4>
+                Hourly forecast
+                <small>Next 24 hours</small>
+            </h4>
+
+            <div id="hourly" class="hourly"></div>
+
+        </section>
+
+
+        <!-- DAILY FORECAST AND NEARBY REPORTS -->
+        <div id="forecast" class="grid two">
+
+            <!-- 7-DAY FORECAST -->
+            <section class="card">
+
+                <h4>
+                    7-day forecast
+                    <small>Low / High</small>
+                </h4>
+
+                <div id="daily"></div>
+
+            </section>
+
+
+            <!-- NEARBY REPORTS -->
+            <section class="card">
+
+                <h4>
+                    Nearby reports
+                    <small>Within 5 km</small>
+                </h4>
+
+                <div id="reports"></div>
+
+
+                <div class="report-foot">
+
+                    <small>
+                        Community reports. Conditions may change quickly.
+                    </small>
+
+                    <button
+                        id="reportBtn"
+                        class="primary"
+                        type="button"
+                    >
+                        + Report flooding
+                    </button>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        
+        <!-- ==========================================
+            INCIDENT REPORT MODAL
+        ========================================== -->
+
+        <div id="reportModal" class="report-modal hidden">
+            <div class="report-modal-backdrop" id="closeReportBackdrop"></div>
+
+            <div class="report-modal-content">
+
+                <div class="report-modal-header">
+                    <div>
+                        <p class="label">COMMUNITY SAFETY</p>
+                        <h2>Report an Incident</h2>
+                        <small>Help keep your community informed.</small>
+                    </div>
+
+                    <button type="button" id="closeReportModal" class="modal-close">
+                        &times;
+                    </button>
+                </div>
+
+                <form id="incidentReportForm">
+
+                    <div class="form-group">
+                        <label for="reportType">Incident Type</label>
+
+                        <select id="reportType" required>
+                            <option value="">Select incident type</option>
+                            <option value="flooding">Flooding</option>
+                            <option value="road_blocked">Road Blocked</option>
+                            <option value="landslide">Landslide</option>
+                            <option value="strong_wind">Strong Wind</option>
+                            <option value="heavy_rain">Heavy Rain</option>
+                            <option value="fallen_tree">Fallen Tree</option>
+                            <option value="other">Other Emergency</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reportTitle">Report Title</label>
+
+                        <input
+                            type="text"
+                            id="reportTitle"
+                            maxlength="150"
+                            placeholder="Example: Flooding along Zaragoza Street"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reportDescription">Description</label>
+
+                        <textarea
+                            id="reportDescription"
+                            rows="4"
+                            maxlength="2000"
+                            placeholder="Describe what happened..."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reportSeverity">Severity</label>
+
+                        <select id="reportSeverity" required>
+                            <option value="">Select severity</option>
+                            <option value="low">Low</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Incident Location</label>
+
+                        <div class="selected-report-location">
+                            <strong id="reportStreetName">No street selected</strong>
+                            <small id="reportAddress">Select a location on the map.</small>
+                        </div>
+                    </div>
+
+                    <div id="reportFormMessage" class="report-message hidden"></div>
+
+                    <div class="report-form-actions">
+                        <button
+                            type="button"
+                            id="cancelReport"
+                            class="secondary"
+                        >
+                            Cancel
+                        </button>
+
+                        <button type="submit" class="primary" id="submitReport">
+                            Submit Report
+                        </button>
+                    </div>
+
+                </form>
             </div>
         </div>
 
-        <div class="grid two">
-            <section class="card">
-                <h4>Current weather <small id="coords"></small></h4>
-                <div class="current">
-                    <div class="big" id="temp">--°</div>
-                    <div>
-                        <div class="cond" id="cond">--</div>
-                        <small id="range"></small>
-                    </div>
-                    <div class="big-icon" id="bigIcon"></div>
-                </div>
-                <div class="stats">
-                    <div><small>Wind</small><b id="wind">--</b></div>
-                    <div><small>Humidity</small><b id="humidity">--</b></div>
-                    <div><small>Visibility</small><b id="visibility">--</b></div>
-                    <div><small>UV index</small><b id="uvi">--</b></div>
-                </div>
-            </section>
 
-            <section id="safety" class="card">
-                <h4>Area safety <small id="alertCount"></small></h4>
-                <div id="alertBox" class="alert"></div>
-            </section>
-        </div>
 
-        <section class="card">
-            <h4>Hourly forecast <small>Next 24 hours</small></h4>
-            <div id="hourly" class="hourly"></div>
-        </section>
+        <!-- FOOTER -->
+        <footer class="foot">
+            Weather data: Open-Meteo · Times shown in Philippine Standard Time
+        </footer>
 
-        <div id="forecast" class="grid two">
-            <section class="card">
-                <h4>7-day forecast <small>Low / High</small></h4>
-                <div id="daily"></div>
-            </section>
+        
 
-            <section class="card">
-                <h4>Nearby reports <small>Within 5 km</small></h4>
-                <div id="reports"></div>
-                <div class="report-foot">
-                    <small>Community reports. Conditions may change quickly.</small>
-                    <button id="reportBtn" class="primary" type="button">+ Report flooding</button>
-                </div>
-            </section>
-        </div>
-
-        <footer class="foot">Weather data: OpenWeather · Times shown in Philippine Standard Time</footer>
     </main>
+
 </div>
+
 </body>
 </html>
