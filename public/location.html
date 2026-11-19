@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Your Location | LIGTAS.AI</title>
+    <link rel="stylesheet" href="/css/location.css">
+    <script src="/js/location.js" defer></script>
+</head>
+<body>
+
+    <main class="location-container">
+        <div class="location-card">
+            <h1>Set Your Location</h1>
+            <p class="subtitle">
+                Choose your area to receive localized weather updates
+                and community safety information.
+            </p>
+
+            <button type="button" id="gpsButton" class="gps-button">
+                Use My Current Location
+            </button>
+
+            <div class="separator">
+                <span>OR SEARCH MANUALLY</span>
+            </div>
+
+            <div class="search-container">
+                <label for="locationSearch">Search your location</label>
+                <input
+                    type="text"
+                    id="locationSearch"
+                    placeholder="Enter a city or municipality..."
+                    autocomplete="off"
+                >
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
+            <div id="selectedLocation" class="selected-location hidden">
+                <h3>Selected Location</h3>
+                <p id="locationDetails"></p>
+                <button type="button" id="saveButton">
+                    Save Location
+                </button>
+            </div>
+
+            <p id="locationMessage" class="message"></p>
+        </div>
+    </main>
+
+</body>
+</html>

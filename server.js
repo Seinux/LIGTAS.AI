@@ -70,6 +70,15 @@ app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 const authRoutes = require('./route/authRoutes');
 app.use('/auth', authRoutes);
 
+const locationRoutes = require('./route/locationRoutes');
+app.use('/api/profile/location', locationRoutes);
+
+const geocodingRoutes = require('./route/geocodingRoutes');
+app.use('/api/geocoding', geocodingRoutes);
+
+const dashboardRoutes = require('./route/dashboardRoutes');
+app.use('/api/dashboard', dashboardRoutes);
+
 // Frontend pages
 // Login page
 app.get('/login', (req, res) => {
@@ -93,6 +102,10 @@ app.get('/verify-otp', (req, res) => {
 // Protected dashboard
 app.get('/dashboard', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/location', authMiddleware, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'location.html'));
 });
 
 async function startServer() {

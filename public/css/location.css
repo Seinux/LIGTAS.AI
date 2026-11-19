@@ -1,0 +1,163 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0f12;
+    color: #f1f1f1;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.location-container {
+    width: 100%;
+    max-width: 520px;
+}
+
+.location-card {
+    background: #171a1f;
+    border: 1px solid #292d35;
+    border-radius: 14px;
+    padding: 32px;
+}
+
+h1 {
+    font-size: 26px;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #999fa9;
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.gps-button {
+    background: #e5e7eb;
+    color: #111318;
+}
+
+.gps-button:hover,
+#saveButton:hover {
+    background: #cbd0d8;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #777e89;
+    font-size: 11px;
+    margin: 25px 0;
+}
+
+.separator::before,
+.separator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #30343c;
+}
+
+.search-container {
+    position: relative;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 9px;
+    color: #c5c9d0;
+}
+
+input {
+    width: 100%;
+    padding: 13px;
+    background: #101216;
+    border: 1px solid #353a44;
+    border-radius: 8px;
+    color: white;
+    outline: none;
+}
+
+input:focus {
+    border-color: #aeb5c0;
+}
+
+.search-results {
+    position: absolute;
+    top: 75px;
+    left: 0;
+    width: 100%;
+    background: #20242b;
+    border: 1px solid #353a44;
+    border-radius: 8px;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.result-item {
+    padding: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid #30343c;
+}
+
+.result-item:hover {
+    background: #303640;
+}
+
+.result-item small {
+    display: block;
+    color: #9da4af;
+    margin-top: 5px;
+}
+
+.selected-location {
+    margin-top: 25px;
+    padding: 16px;
+    background: #20242b;
+    border-radius: 8px;
+}
+
+.selected-location h3 {
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.selected-location p {
+    color: #b5bbc5;
+    font-size: 13px;
+    margin-bottom: 15px;
+}
+
+#saveButton {
+    background: #e5e7eb;
+    color: #111318;
+}
+
+.message {
+    margin-top: 15px;
+    font-size: 13px;
+    color: #c5c9d0;
+}
+
+.hidden {
+    display: none;
+}
