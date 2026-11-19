@@ -1,7 +1,10 @@
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const state = { loc: { name: 'Quezon City', region: 'PH', lat: 14.676, lon: 121.043 }, units: 'imperial' };
+const state = {
+    loc: null,
+    units: 'metric'
+};
 
 const ICONS = { '01': '☀️', '02': '⛅', '03': '☁️', '04': '☁️', '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '❄️', '50': '🌫️' };
 const icon = (code) => ICONS[String(code || '').slice(0, 2)] || '☁️';
@@ -16,6 +19,33 @@ async function api(path, options = {}) {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Request failed');
     return res.status === 204 ? null : res.json();
 }
+
+
+async function loadDefaultLocation() {
+    const data = await api('/api/dashboard/location');
+
+    if (!data.hasLocation) {
+        window.location.href = '/location.html';
+        return false;
+    }
+
+    const location = data.location;
+
+    state.loc = {
+        id: location.id,
+        name: [
+            location.barangay,
+            location.city,
+            location.province
+        ].filter(Boolean).join(', '),
+        region: location.region || location.countryCode,
+        lat: Number(location.latitude),
+        lon: Number(location.longitude)
+    };
+
+    return true;
+}
+
 
 const q = () => `lat=${state.loc.lat}&lon=${state.loc.lon}&units=${state.units}`;
 const deg = state.units === 'metric' ? '°C' : '°F';
@@ -84,8 +114,18 @@ function pick(li) {
 }
 
 async function refresh() {
-    try { await Promise.all([loadWeather(), loadReports(), loadSidebar()]); }
-    catch (e) { console.error(e); $('locName').textContent = 'Could not load data'; }
+    if (!state.loc) return;
+
+    try {
+        await Promise.all([
+            loadWeather(),
+            loadReports(),
+            loadSidebar()
+        ]);
+    } catch (e) {
+        console.error(e);
+        $('locName').textContent = 'Could not load data';
+    }
 }
 
 // ---------- events ----------
@@ -112,10 +152,7 @@ $('searchInput').addEventListener('input', (e) => {
 });
 
 $('useLocation').addEventListener('click', () => {
-    navigator.geolocation?.getCurrentPosition((p) => {
-        state.loc = { name: 'Current location', region: '', lat: p.coords.latitude, lon: p.coords.longitude };
-        refresh();
-    }, () => alert('Location permission denied.'));
+    window.location.href = '/location';
 });
 
 $('saveCurrent').addEventListener('click', async () => {
@@ -146,4 +183,18 @@ $('logoutButton').addEventListener('click', async () => {
     try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { window.location.href = '/login'; }
 });
 
-refresh();
+async function initializeDashboard() {
+    try {
+        const hasLocation = await loadDefaultLocation();
+
+        if (!hasLocation) return;
+
+        await refresh();
+
+    } catch (error) {
+        console.error('Dashboard initialization error:', error);
+        $('locName').textContent = 'Unable to load dashboard';
+    }
+}
+
+initializeDashboard();
