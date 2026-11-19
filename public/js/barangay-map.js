@@ -577,6 +577,7 @@ async function handleMapClick(event) {
     mapStatus.textContent = 'Looking up street information...';
 
     const popupContent = document.createElement('div');
+    popupContent.className = 'incident-location-popup';
 
     const title = document.createElement('strong');
     title.textContent = 'Identifying street...';

@@ -224,10 +224,10 @@
     max-height: 90vh;
     overflow-y: auto;
     padding: 26px;
-    border: 1px solid var(--border, #334155);
+    border: 1px solid #334155;
     border-radius: 16px;
-    background: var(--surface, #111827);
-    color: var(--text, #f8fafc);
+    background: #1a1d21;
+    color: #f2f4f7;
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
     animation: reportModalEnter 0.2s ease;
 }
@@ -260,23 +260,23 @@
 }
 
 .report-modal-header small {
-    color: var(--muted, #94a3b8);
+    color: #8b929c;
     font-size: 12px;
 }
 
 .modal-close {
     width: 34px;
     height: 34px;
-    border: 1px solid var(--border, #334155);
+    border: 1px solid #334155;
     border-radius: 8px;
     background: transparent;
-    color: var(--text, #f8fafc);
+    color: #f2f4f7;
     font-size: 23px;
     cursor: pointer;
 }
 
 .modal-close:hover {
-    background: var(--hover, #334155);
+    background: #242830;
 }
 
 /* Form fields */
@@ -296,7 +296,7 @@
 #incidentReportForm label {
     font-size: 13px;
     font-weight: 600;
-    color: var(--text, #f8fafc);
+    color: #f2f4f7;
 }
 
 #incidentReportForm input,
@@ -304,11 +304,11 @@
 #incidentReportForm textarea {
     width: 100%;
     padding: 12px 13px;
-    border: 1px solid var(--border, #334155);
+    border: 1px solid #334155;
     border-radius: 9px;
     outline: none;
-    background: var(--background, #0f172a);
-    color: var(--text, #f8fafc);
+    background: #121417;
+    color: #f2f4f7;
     font: inherit;
     font-size: 13px;
     transition: border-color 0.2s ease;
@@ -317,7 +317,7 @@
 #incidentReportForm input:focus,
 #incidentReportForm select:focus,
 #incidentReportForm textarea:focus {
-    border-color: var(--accent, #3b82f6);
+    border-color: #60a5fa;
 }
 
 #incidentReportForm textarea {
@@ -341,7 +341,7 @@
     flex-direction: column;
     gap: 5px;
     padding: 13px;
-    border: 1px solid var(--border, #334155);
+    border: 1px solid #334155;
     border-radius: 9px;
     background: rgba(37, 99, 235, 0.08);
 }
@@ -352,7 +352,7 @@
 }
 
 .selected-report-location small {
-    color: var(--muted, #94a3b8);
+    color: #8b929c;
     font-size: 11px;
 }
 
@@ -399,8 +399,8 @@
 }
 
 .report-form-actions .secondary {
-    background: var(--hover, #334155);
-    color: var(--text, #f8fafc);
+    background: #242830;
+    color: #f2f4f7;
 }
 
 .report-form-actions .primary {
@@ -459,6 +459,50 @@
 .report-popup p {
     margin: 7px 0;
     font-size: 12px;
+}
+
+.incident-location-popup {
+    min-width: 220px;
+    color: #f2f4f7;
+}
+
+.incident-location-popup strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #f8fafc;
+    font-size: 14px;
+}
+
+.incident-location-popup p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+.maplibregl-popup:has(.incident-location-popup) .maplibregl-popup-content {
+    padding: 16px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    background: #1a1d21;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.maplibregl-popup-anchor-bottom:has(.incident-location-popup) .maplibregl-popup-tip {
+    border-top-color: #1a1d21;
+}
+
+.maplibregl-popup-anchor-top:has(.incident-location-popup) .maplibregl-popup-tip {
+    border-bottom-color: #1a1d21;
+}
+
+.maplibregl-popup-anchor-left:has(.incident-location-popup) .maplibregl-popup-tip {
+    border-right-color: #1a1d21;
+}
+
+.maplibregl-popup-anchor-right:has(.incident-location-popup) .maplibregl-popup-tip {
+    border-left-color: #1a1d21;
 }
 
 
