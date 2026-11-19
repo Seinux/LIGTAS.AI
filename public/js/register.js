@@ -51,7 +51,13 @@ if (registerForm) {
                 return;
             }
 
+            // Save the user ID for OTP verification
             sessionStorage.setItem('pendingUserId', data.user.id);
+
+            registerMessage.textContent =
+                'Account created! Redirecting to verification...';
+
+            registerMessage.classList.add('success');
 
             window.location.href = '/verify-otp';
 

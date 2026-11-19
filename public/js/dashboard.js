@@ -1,79 +1,149 @@
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const usernameElement = document.getElementById('username');
-const accountUsername = document.getElementById('accountUsername');
-const accountEmail = document.getElementById('accountEmail');
-const accountPhone = document.getElementById('accountPhone');
-const phoneStatus = document.getElementById('phoneStatus');
-const logoutButton = document.getElementById('logoutButton');
+const state = { loc: { name: 'Quezon City', region: 'PH', lat: 14.676, lon: 121.043 }, units: 'imperial' };
 
-// Get authenticated user.
-async function loadDashboard() {
-    try {
-        const response = await fetch('/auth/me', {
-            method: 'GET',
-            credentials: 'same-origin'
-        });
+const ICONS = { '01': '☀️', '02': '⛅', '03': '☁️', '04': '☁️', '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '❄️', '50': '🌫️' };
+const icon = (code) => ICONS[String(code || '').slice(0, 2)] || '☁️';
 
-        if (response.status === 401) {
-            window.location.href = '/login';
-            return;
-        }
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Unable to load account.');
-        }
-        const user = data.user;
-
-        usernameElement.textContent = user.username;
-        accountUsername.textContent = user.username;
-        accountEmail.textContent = user.email;
-        accountPhone.textContent = user.phone_number || 'Not provided';
-
-        const verified = user.phone_verified === true;
-
-        phoneStatus.textContent = verified ? 'Verified' : 'Not verified';
-        phoneStatus.style.color = verified ? '#80d6a0' : '#ff7777';
-
-    } catch (error) {
-        console.error('Dashboard error:', error);
-
-        usernameElement.textContent = 'Unavailable';
-        accountUsername.textContent = 'Unavailable';
-        accountEmail.textContent = 'Unavailable';
-        accountPhone.textContent = 'Unavailable';
-        phoneStatus.textContent = 'Unavailable';
-    }
+async function api(path, options = {}) {
+    const res = await fetch(path, {
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        ...options,
+    });
+    if (res.status === 401 || res.redirected) { window.location.href = '/login'; throw new Error('Not logged in'); }
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Request failed');
+    return res.status === 204 ? null : res.json();
 }
 
-// Log out.
-logoutButton.addEventListener('click', async () => {
-    logoutButton.disabled = true;
-    logoutButton.textContent = 'Logging out...';
+const q = () => `lat=${state.loc.lat}&lon=${state.loc.lon}&units=${state.units}`;
+const deg = state.units === 'metric' ? '°C' : '°F';
+const time = (t, o) => new Date(t * 1000).toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', ...o });
 
-    try {
-        const response = await fetch('/auth/logout', {
-            method: 'POST',
-            credentials: 'same-origin'
-        });
+// ---------- weather ----------
+async function loadWeather() {
+    const w = await api(`/api/weather?${q()}`);
+    const c = w.current, metric = state.units === 'metric';
 
-        const data = await response.json();
+    $('locName').textContent = state.loc.name || w.location.name;
+    $('coords').textContent = `${w.location.lat.toFixed(2)}° N, ${w.location.lon.toFixed(2)}° E`;
+    $('dateText').textContent = new Date().toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', weekday: 'long', month: 'long', day: 'numeric' });
+    $('updatedText').textContent = `${time(c.updatedAt, { hour: 'numeric', minute: '2-digit' })} PHT · Updated just now`;
 
-        if (!response.ok) {
-            throw new Error(data.message || 'Logout failed.');
-        }
+    $('temp').textContent = `${c.temp}°`;
+    $('cond').textContent = c.description.replace(/^./, (m) => m.toUpperCase());
+    $('range').textContent = `Feels like ${c.feelsLike}° · H:${c.high}° L:${c.low}°`;
+    $('bigIcon').textContent = icon(c.icon);
+    $('wind').textContent = `${c.wind} ${metric ? 'm/s' : 'mph'}`;
+    $('humidity').textContent = `${c.humidity}%`;
+    $('visibility').textContent = metric ? `${(c.visibility / 1000).toFixed(1)} km` : `${(c.visibility / 1609).toFixed(1)} mi`;
+    $('uvi').textContent = c.uvi < 3 ? `${Math.round(c.uvi)} · Low` : c.uvi < 6 ? `${Math.round(c.uvi)} · Moderate` : `${Math.round(c.uvi)} · High`;
 
-        window.location.href = '/login';
+    const a = w.alerts[0];
+    $('alertCount').textContent = `${w.alerts.length} active alert${w.alerts.length === 1 ? '' : 's'}`;
+    $('alertBox').className = a ? 'alert on' : 'alert';
+    $('alertBox').innerHTML = a
+        ? `<strong>${esc(a.event)}</strong>${esc((a.description || '').slice(0, 160))}<br><small>${esc(a.sender)}</small>`
+        : '<strong>All clear</strong>No active weather alerts for this area.';
 
-    } catch (error) {
-        console.error('Logout error:', error);
+    $('hourly').innerHTML = w.hourly.slice(0, 9).map((h, i) => `
+        <div class="hour"><small>${i === 0 ? 'Now' : time(h.time, { hour: 'numeric' })}</small>
+        <span class="ic">${icon(h.icon)}</span><b>${h.temp}°</b><small>💧 ${h.pop}%</small></div>`).join('');
 
-        alert('Unable to log out. Please try again.');
+    const lo = Math.min(...w.daily.map((d) => d.low)), hi = Math.max(...w.daily.map((d) => d.high)), span = hi - lo || 1;
+    $('daily').innerHTML = w.daily.map((d, i) => `
+        <div class="day"><b>${i === 0 ? 'Today' : new Date(d.time * 1000).toLocaleDateString('en-PH', { weekday: 'short', timeZone: 'Asia/Manila' })}</b>
+        <span>${icon(d.icon)}</span><small>${esc(d.condition)}</small><small>${d.pop}%</small>
+        <small>${d.low}°</small><div class="bar"><i style="left:${((d.low - lo) / span) * 100}%;right:${100 - ((d.high - lo) / span) * 100}%"></i></div><small>${d.high}°</small></div>`).join('');
+}
 
-        logoutButton.disabled = false;
-        logoutButton.textContent = 'Log out';
-    }
+async function loadReports() {
+    const list = await api(`/api/reports/nearby?lat=${state.loc.lat}&lon=${state.loc.lon}&radius=5`);
+    $('reports').innerHTML = list.length
+        ? list.map((r) => `<div class="rep"><span>${r.severity === 'info' ? '≋' : '⚠️'}</span><div><b>${esc(r.title)}</b>
+            <small>${esc(r.description || '')}</small><small>${Math.max(1, Math.round((Date.now() - new Date(r.created_at)) / 60000))} min ago · ${r.distance_km} km away</small></div></div>`).join('')
+        : '<small>No reports nearby in the last 24 hours.</small>';
+}
+
+// ---------- sidebar ----------
+const locItem = (l, extra = '') => `<li data-lat="${l.lat}" data-lon="${l.lon}" data-name="${esc(l.name)}" data-region="${esc(l.region || '')}">
+    <span><b>${esc(l.name)}</b><small>${esc(l.region || '')}</small></span>${extra}</li>`;
+
+async function loadSidebar() {
+    const [saved, recent] = await Promise.all([api(`/api/locations?units=${state.units}`), api('/api/recent-searches')]);
+    $('savedList').innerHTML = saved.map((l) => locItem(l, l.temp !== undefined ? `<span class="temp">${l.temp}°</span>` : '')).join('') || '<small>No saved locations yet.</small>';
+    $('recentList').innerHTML = recent.map((l) => locItem(l)).join('');
+    document.querySelectorAll('#savedList li').forEach((li) => li.classList.toggle('active', Number(li.dataset.lat) === state.loc.lat && Number(li.dataset.lon) === state.loc.lon));
+}
+
+function pick(li) {
+    state.loc = { name: li.dataset.name, region: li.dataset.region, lat: Number(li.dataset.lat), lon: Number(li.dataset.lon) };
+    $('searchResults').classList.add('hidden');
+    refresh();
+}
+
+async function refresh() {
+    try { await Promise.all([loadWeather(), loadReports(), loadSidebar()]); }
+    catch (e) { console.error(e); $('locName').textContent = 'Could not load data'; }
+}
+
+// ---------- events ----------
+['savedList', 'recentList', 'searchResults'].forEach((id) =>
+    $(id).addEventListener('click', (e) => { const li = e.target.closest('li[data-lat]'); if (li) pick(li); }));
+
+let timer;
+$('searchInput').addEventListener('input', (e) => {
+    clearTimeout(timer);
+    const v = e.target.value.trim();
+    if (v.length < 2) return $('searchResults').classList.add('hidden');
+    timer = setTimeout(async () => {
+        try {
+            const res = await api(`/api/places/search?q=${encodeURIComponent(v)}`);
+            $('searchResults').innerHTML = res.map((l) => locItem(l)).join('') || '<small>No results.</small>';
+            $('searchResults').classList.remove('hidden');
+            $('searchResults').onclick = async (ev) => {
+                const li = ev.target.closest('li[data-lat]'); if (!li) return;
+                await api('/api/recent-searches', { method: 'POST', body: JSON.stringify({ name: li.dataset.name, region: li.dataset.region, lat: li.dataset.lat, lon: li.dataset.lon }) });
+                pick(li);
+            };
+        } catch (err) { console.error(err); }
+    }, 300);
 });
 
-loadDashboard();
+$('useLocation').addEventListener('click', () => {
+    navigator.geolocation?.getCurrentPosition((p) => {
+        state.loc = { name: 'Current location', region: '', lat: p.coords.latitude, lon: p.coords.longitude };
+        refresh();
+    }, () => alert('Location permission denied.'));
+});
+
+$('saveCurrent').addEventListener('click', async () => {
+    try { await api('/api/locations', { method: 'POST', body: JSON.stringify(state.loc) }); loadSidebar(); }
+    catch (e) { alert(e.message); }
+});
+
+$('reportBtn').addEventListener('click', async () => {
+    const title = prompt('What are you seeing? (e.g. "Roadside flooding on Commonwealth Ave")');
+    if (!title) return;
+    try {
+        await api('/api/reports', { method: 'POST', body: JSON.stringify({ title, severity: 'warning', lat: state.loc.lat, lon: state.loc.lon }) });
+        loadReports();
+    } catch (e) { alert(e.message); }
+});
+
+function setUnits(u) {
+    state.units = u;
+    $('unitF').classList.toggle('active', u === 'imperial');
+    $('unitC').classList.toggle('active', u === 'metric');
+    refresh();
+}
+$('unitF').addEventListener('click', () => setUnits('imperial'));
+$('unitC').addEventListener('click', () => setUnits('metric'));
+
+// NOTE: change '/auth/logout' if your authRoutes uses a different path.
+$('logoutButton').addEventListener('click', async () => {
+    try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { window.location.href = '/login'; }
+});
+
+refresh();
