@@ -138,6 +138,7 @@ Relationships and behavior:
 
 ## Development notes
 
+- The dashboard uses a fixed dark color theme so its appearance is consistent in regular and incognito/private browser windows. Keep the theme variables in `public/css/dashboard.css` as the source of truth, and do not add a `prefers-color-scheme` override unless an explicit theme switcher is implemented.
 - The registration validator accepts Philippine numbers in `09XXXXXXXXX` or `+639XXXXXXXXX` format. Usernames must be 3–50 letters, numbers, or underscores; passwords must be 8–72 characters.
 - In development, `OTP_DELIVERY_MODE=console` prints the OTP to the server terminal for local testing only. Console delivery is rejected in production.
 - For actual Philippine SMS, set `OTP_DELIVERY_MODE=semaphore` and configure `SEMAPHORE_API_KEY` (and optionally `SEMAPHORE_SENDER_NAME`) from a Semaphore account. See the [Semaphore API documentation](https://semaphore.co/docs). No permanently free production SMS tier was confirmed; live messages may require account credits. Local console delivery is free but does not send a message to a phone.
